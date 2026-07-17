@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111318">
+<title>Exercise Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#111318; --card:#1c1f26; --card2:#242833; --ink:#f2f4f8; --mut:#9aa3b2;
+  --red:#e04545; --blue:#3d6fb4; --green:#3fae6a; --amber:#e0a13a; --line:#2e3340;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex:none}
+header h1{font-size:17px;letter-spacing:.5px;flex:1;font-weight:800}
+header h1 small{display:block;font-size:10px;color:var(--mut);font-weight:500;letter-spacing:1px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);cursor:pointer;user-select:none}
+.tswitch{width:46px;height:24px;border-radius:12px;background:#3a3f4d;position:relative;transition:.2s}
+.tswitch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on .tswitch{background:var(--green)}
+.toggle.on .tswitch::after{left:25px}
+.toggle .lbl{min-width:44px;text-align:right}
+.toggle.on .lbl{color:var(--green);font-weight:700}
+main{flex:1;overflow-y:auto;padding:14px 14px 90px;-webkit-overflow-scrolling:touch}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#171a20;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:none;color:var(--mut);padding:10px 0 12px;font-size:11px;cursor:pointer}
+nav button .ic{display:block;font-size:20px;margin-bottom:2px}
+nav button.act{color:var(--ink)}
+.screen{display:none}.screen.act{display:block}
+/* home */
+.banner{background:linear-gradient(135deg,#20242e,#181b22);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.banner .motto{font-weight:800;font-size:14px;letter-spacing:.4px}
+.banner .today{margin-top:6px;font-size:13px;color:var(--mut)}
+.banner .today b{color:var(--ink)}
+.week{display:flex;gap:5px;margin-top:10px}
+.day{flex:1;text-align:center;font-size:10px;color:var(--mut);padding:6px 0;border-radius:8px;background:var(--card2)}
+.day.workout{background:#33272a;color:#f0a0a0}
+.day.today{outline:2px solid var(--ink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 14px;border-radius:20px;background:var(--card2);color:var(--mut);font-size:12px;border:none;cursor:pointer;font-weight:600}
+.chip.act{background:var(--ink);color:#111}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.ex{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:transform .1s}
+.ex:active{transform:scale(.97)}
+.ex .em{font-size:26px}
+.ex h3{font-size:14px;margin:8px 0 4px}
+.ex .cat{display:inline-block;font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:4px;text-transform:uppercase}
+.cat.CARDIO{background:#4b2226;color:#ff8f8f}.cat.PUSH{background:#4b2226;color:#ff8f8f}
+.cat.PULL{background:#1f3350;color:#8fb8ff}.cat.LEGS{background:#1f3350;color:#8fb8ff}
+.cat.CORE{background:#20303d;color:#9fd0e8}.cat.ARMS{background:#33301f;color:#e8d59f}
+.cat.SHOULDERS{background:#33301f;color:#e8d59f}
+.ex .meta{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5}
+/* workout */
+#stage{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:3/4;max-height:62vh;margin:0 auto;width:100%}
+@media(min-aspect-ratio:1/1){#stage{aspect-ratio:16/10;max-height:60vh}}
+#vid,#cv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#vid.mir,#cv.mir{transform:scaleX(-1)}
+#hud{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:12px;pointer-events:none}
+#hudTop{display:flex;justify-content:space-between;align-items:flex-start}
+#count{font-size:64px;font-weight:900;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+#count small{font-size:16px;color:#cfd6e0;font-weight:600}
+#setInfo{background:rgba(0,0,0,.55);padding:6px 12px;border-radius:10px;font-size:13px;font-weight:700}
+#formMsg{align-self:center;background:rgba(224,69,69,.92);color:#fff;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:700;opacity:0;transition:.2s;max-width:90%;text-align:center}
+#formMsg.ok{background:rgba(63,174,106,.92)}
+#formMsg.show{opacity:1}
+#stateLbl{align-self:flex-start;background:rgba(0,0,0,.55);padding:5px 12px;border-radius:10px;font-size:12px;color:#cfd6e0}
+#restOv{position:absolute;inset:0;background:rgba(10,12,16,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:5}
+#restOv.show{display:flex}
+#restOv .t{font-size:70px;font-weight:900}
+#restOv .l{color:var(--mut);letter-spacing:2px;font-size:13px;font-weight:700}
+#restOv button{pointer-events:auto}
+.wname{display:flex;align-items:center;gap:10px;margin:12px 2px 8px}
+.wname h2{font-size:18px;flex:1}
+.wname .tempo{font-size:11px;color:var(--mut)}
+.btnrow{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;padding:13px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:var(--card2);color:var(--ink)}
+.btn.pri{background:var(--green);color:#08130c}
+.btn.warn{background:var(--red);color:#fff}
+.btn.sm{flex:none;padding:13px 14px}
+#tipBox{margin-top:12px;background:linear-gradient(135deg,#1d2b22,#182019);border:1px solid #2c4434;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;display:none}
+#tipBox.show{display:block}
+#tipBox .h{font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--green);margin-bottom:5px}
+#offNote{margin-top:12px;font-size:12px;color:var(--mut);text-align:center;display:none}
+#offNote.show{display:block}
+/* history */
+.hday{margin-bottom:16px}
+.hday h4{font-size:12px;color:var(--mut);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase}
+.hitem{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.hitem .sub{font-size:12px;color:var(--mut);margin-top:3px}
+.hitem .val{font-weight:800;font-size:15px;text-align:right}
+.empty{text-align:center;color:var(--mut);padding:40px 20px;font-size:14px;line-height:1.6}
+#loader{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:#000;color:var(--mut);font-size:13px;z-index:4}
+.spin{width:28px;height:28px;border:3px solid #333;border-top-color:var(--green);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>EXERCISE TRACKER<small>PICK YOURSELF UP. AGAIN.</small></h1>
+    <div class="toggle" id="netToggle"><span class="lbl" id="netLbl">Offline</span><div class="tswitch"></div></div>
+  </header>
+  <main id="main">
+    <section class="screen act" id="scr-home">
+      <div class="banner">
+        <div class="motto">SUFFER THE HARM, JUST TO TOUCH THE DREAM.</div>
+        <div class="today" id="todayLine"></div>
+        <div class="week" id="weekRow"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="grid" id="exGrid"></div>
+    </section>
+    <section class="screen" id="scr-workout">
+      <div class="wname"><h2 id="wTitle"></h2><span class="tempo" id="wTempo"></span><button class="btn sm" id="editTarget" title="Edit target">✎</button></div>
+      <div id="stage">
+        <video id="vid" playsinline muted></video>
+        <canvas id="cv"></canvas>
+        <div id="hud">
+          <div id="hudTop"><div id="count">0<small id="countUnit"></small></div><div id="setInfo">Set 1</div></div>
+          <div id="formMsg"></div>
+          <div id="stateLbl">Position yourself in frame</div>
+        </div>
+        <div id="restOv"><div class="l">REST</div><div class="t" id="restT">45</div><button class="btn" id="skipRest">Skip rest</button></div>
+        <div id="loader"><div class="spin"></div><span id="loadTxt">Tap Start Camera to begin</span></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn sm" id="backBtn">←</button>
+        <button class="btn pri" id="startBtn">Start Camera</button>
+        <button class="btn sm" id="flipBtn" title="Switch camera">🔄</button>
+        <button class="btn warn sm" id="finishBtn">Finish</button>
+      </div>
+      <div id="tipBox"><div class="h">💡 TIP</div><span id="tipTxt"></span></div>
+      <div id="offNote">Offline mode — tracking only. Toggle online for tips.</div>
+    </section>
+    <section class="screen" id="scr-history">
+      <div id="histList"></div>
+    </section>
+  </main>
+  <nav>
+    <button class="act" data-scr="home"><span class="ic">🏋️</span>Workout</button>
+    <button data-scr="history"><span class="ic">📈</span>History</button>
+  </nav>
+</div>
+<script type="module">
+/* ==================== POSE MATH ==================== */
+const L={NOSE:0,LS:11,RS:12,LE:13,RE:14,LW:15,RW:16,LH:23,RH:24,LK:25,RK:26,LA:27,RA:28};
+const vis=p=>p&&(p.visibility===undefined||p.visibility>0.5);
+function ang(a,b,c){
+  const v1x=a.x-b.x,v1y=a.y-b.y,v2x=c.x-b.x,v2y=c.y-b.y;
+  const d=(v1x*v2x+v1y*v2y)/((Math.hypot(v1x,v1y)*Math.hypot(v2x,v2y))||1e-6);
+  return Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI;
+}
+function sideAngles(lm,ai,bi,ci){ // [leftIdx,rightIdx] triplets -> per-side angle where visible
+  const out=[];
+  for(const s of [0,1]){
+    const a=lm[ai[s]],b=lm[bi[s]],c=lm[ci[s]];
+    if(vis(a)&&vis(b)&&vis(c)) out.push(ang(a,b,c));
+  }
+  return out;
+}
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const elbows =lm=>sideAngles(lm,[L.LS,L.RS],[L.LE,L.RE],[L.LW,L.RW]);
+const knees  =lm=>sideAngles(lm,[L.LH,L.RH],[L.LK,L.RK],[L.LA,L.RA]);
+const hips   =lm=>sideAngles(lm,[L.LS,L.RS],[L.LH,L.RH],[L.LK,L.RK]);
+const bodyLn =lm=>sideAngles(lm,[L.LS,L.RS],[L.LH,L.RH],[L.LA,L.RA]);
+const abduct =lm=>sideAngles(lm,[L.LE,L.RE],[L.LS,L.RS],[L.LH,L.RH]);
+function torsoLean(lm){ // deg from vertical
+  const s=mid(lm,L.LS,L.RS),h=mid(lm,L.LH,L.RH);
+  if(!s||!h)return null;
+  return Math.abs(Math.atan2(s.x-h.x,h.y-s.y))*180/Math.PI;
+}
+function mid(lm,i,j){
+  const a=lm[i],b=lm[j];
+  if(vis(a)&&vis(b))return{x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  if(vis(a))return a; if(vis(b))return b; return null;
+}
+function upperArmLean(lm){ // max deg of upper arm from vertical (elbow drift for curls)
+  let m=0,found=false;
+  for(const [si,ei] of [[L.LS,L.LE],[L.RS,L.RE]]){
+    const s=lm[si],e=lm[ei];
+    if(vis(s)&&vis(e)){found=true;m=Math.max(m,Math.abs(Math.atan2(e.x-s.x,e.y-s.y))*180/Math.PI);}
+  }
+  return found?m:null;
+}
+/* ==================== EXERCISES ==================== */
+// det: angle-based rep detector {get, isDown(v), isUp(v)}  (rep counts on down->up)
+// form: [{fn(lm)=>true if BAD, msg}]  tips: online tips library
+const EXERCISES=[
+{id:'jumprope',name:'Jump Rope',em:'🪢',cat:'CARDIO',type:'timed',target:120,rest:45,tempo:'Steady pace',
+ tips:['Stay on the balls of your feet and keep jumps low — 2-3 cm off the ground is enough.','Spin the rope with your wrists, not your arms. Elbows stay close to your body.','Look forward, not down. Keep a tall posture and light knees.']},
+{id:'bss',name:'Bulgarian Split Squats',em:'🦵',cat:'LEGS',type:'reps',target:24,rest:45,tempo:'3s down / 1s up',minRepSec:2.5,
+ det:{get:lm=>avg(knees(lm).length?[Math.min(...knees(lm))]:[]),isDown:v=>v<105,isUp:v=>v>155},
+ form:[{fn:lm=>{const t=torsoLean(lm);return t!==null&&t>40;},msg:'Keep your chest up'}],
+ tips:['Front foot far enough forward that your knee stays over your ankle at the bottom.','Control the 3-second descent — the slow negative builds most of the strength.','Drive through the heel of the front foot; the back leg is only for balance. 12 reps per leg.']},
+{id:'declpush',name:'Declined Push-Ups',em:'🙇',cat:'PUSH',type:'reps',target:15,rest:45,tempo:'2s down / 1s up',minRepSec:1.8,
+ det:{get:lm=>avg(elbows(lm)),isDown:v=>v<95,isUp:v=>v>155},
+ form:[{fn:lm=>{const b=avg(bodyLn(lm));return b!==null&&b<150;},msg:'Keep your body straight — don’t sag your hips'}],
+ tips:['Hands slightly wider than shoulders, fingers forward, core braced hard.','The higher your feet, the more upper-chest and shoulder focus — keep hips in line.','Lower for a full 2 seconds; touch chest close to the floor before pressing up.']},
+{id:'rows',name:'Bent-Over Rows',em:'🚣',cat:'PULL',type:'reps',target:20,rest:45,tempo:'1s pull / 2s squeeze / 2s release',minRepSec:3,
+ det:{get:lm=>avg(elbows(lm)),isDown:v=>v<80,isUp:v=>v>145},
+ form:[{fn:lm=>{const h=avg(hips(lm));return h!==null&&h>150;},msg:'Stay hinged — bend at the hips'}],
+ tips:['Hinge at the hips with a flat back — around 45° torso angle, knees soft.','Pull your elbows toward your hips, not straight up. Squeeze shoulder blades 2 full seconds.','Release slowly for 2 seconds. If your lower back rounds, lighten the weight.']},
+{id:'glute',name:'Glute Bridges',em:'🌉',cat:'LEGS',type:'reps',target:20,rest:45,tempo:'1s up / 2s squeeze / 2s down',minRepSec:3,
+ det:{get:lm=>avg(hips(lm)),isDown:v=>v>160,isUp:v=>v<135},
+ tips:['Push through your heels and squeeze your glutes hard at the top for 2 seconds.','At the top your body should form a straight line from knees to shoulders.','Don’t arch the lower back — tuck the pelvis slightly and let the glutes do the lift.'],
+ side:true},
+{id:'diamond',name:'Diamond Push-Ups',em:'💎',cat:'PUSH',type:'reps',target:10,rest:45,tempo:'2s down / 1s up',minRepSec:1.8,
+ det:{get:lm=>avg(elbows(lm)),isDown:v=>v<100,isUp:v=>v>155},
+ form:[{fn:lm=>{const b=avg(bodyLn(lm));return b!==null&&b<150;},msg:'Keep your body straight — don’t sag your hips'}],
+ tips:['Form a diamond with thumbs and index fingers under your chest.','Keep elbows tracking back along your ribs — this is a triceps move.','Quality over quantity: 10 slow, deep reps beat 20 shallow ones.']},
+{id:'press',name:'Shoulder Press',em:'🏗️',cat:'PUSH',type:'reps',target:15,rest:45,tempo:'1s up / 3s down',minRepSec:2.5,
+ det:{get:lm=>avg(elbows(lm)),isDown:v=>v>155,isUp:v=>v<95},
+ tips:['Press straight up until your arms lock out overhead — biceps by your ears.','The 3-second lowering is the hard part. Fight gravity the whole way down.','Brace your core so your lower back doesn’t arch as you press.']},
+{id:'reardelt',name:'Rear Delt Flyes',em:'🦅',cat:'PULL',type:'reps',target:15,rest:45,tempo:'1s pull / 2s squeeze / 2s release',minRepSec:3,
+ det:{get:lm=>avg(abduct(lm)),isDown:v=>v>60,isUp:v=>v<30},
+ tips:['Hinge forward, slight elbow bend, and raise arms out like wings — lead with the elbows.','Use light weight. Rear delts are small; momentum steals all the work.','Pause 2 seconds at the top and squeeze your shoulder blades together.']},
+{id:'latraise',name:'Lateral Raises',em:'🕊️',cat:'SHOULDERS',type:'reps',target:15,rest:45,tempo:'2s up / 2s down',minRepSec:2.5,
+ det:{get:lm=>avg(abduct(lm)),isDown:v=>v>70,isUp:v=>v<28},
+ form:[{fn:lm=>{const a=avg(abduct(lm));return a!==null&&a>105;},msg:'Stop at shoulder height'}],
+ tips:['Raise to shoulder height only — pinkies slightly higher than thumbs, like pouring water.','Slight bend in the elbows, and keep them there. Raise the arm as one piece.','2 seconds up, 2 seconds down. If you’re swinging, the weight is too heavy.']},
+{id:'bicep',name:'Bicep Curls',em:'💪',cat:'ARMS',type:'reps',target:40,rest:45,tempo:'1s up / 3s down',minRepSec:2.5,perArm:true,
+ det:{get:lm=>{const e=elbows(lm);return e.length?Math.min(...e):null;},isDown:v=>v<60,isUp:v=>v>150},
+ form:[{fn:lm=>{const u=upperArmLean(lm);return u!==null&&u>30;},msg:'Pin your elbows to your sides'}],
+ tips:['Elbows glued to your ribs — only the forearm moves.','Curl up in 1 second, lower in 3. The negative is where biceps grow.','Fully straighten your arm at the bottom of every rep. 20 per arm.']},
+{id:'hammer',name:'Hammer Curls',em:'🔨',cat:'ARMS',type:'reps',target:40,rest:45,tempo:'1s up / 3s down',minRepSec:2.5,perArm:true,
+ det:{get:lm=>{const e=elbows(lm);return e.length?Math.min(...e):null;},isDown:v=>v<60,isUp:v=>v>150},
+ form:[{fn:lm=>{const u=upperArmLean(lm);return u!==null&&u>30;},msg:'Pin your elbows to your sides'}],
+ tips:['Neutral grip (palms facing each other) hits the brachialis and forearms.','Same 3-second negative as bicep curls — no dropping the weight.','Keep wrists locked straight; don’t let the dumbbell tilt.']},
+{id:'reverse',name:'Reverse Curls',em:'🔄',cat:'ARMS',type:'reps',target:40,rest:45,tempo:'1s up / 3s down',minRepSec:2.5,perArm:true,
+ det:{get:lm=>{const e=elbows(lm);return e.length?Math.min(...e):null;},isDown:v=>v<65,isUp:v=>v>150},
+ form:[{fn:lm=>{const u=upperArmLean(lm);return u!==null&&u>30;},msg:'Pin your elbows to your sides'}],
+ tips:['Palms-down grip — this targets forearms and brachioradialis. Go lighter than bicep curls.','Keep your wrists straight and firm; don’t let them flex back.','Slow 3-second lowering protects the elbows and doubles the effect.']},
+{id:'shtap',name:'Shoulder Tap Push-Ups',em:'🤚',cat:'CORE',type:'reps',target:20,rest:45,tempo:'Controlled taps',custom:'taps',
+ form:[{fn:lm=>{const b=avg(bodyLn(lm));return b!==null&&b<148;},msg:'Hips level — don’t rock side to side'}],
+ tips:['Feet wider than normal push-up stance gives you a stable base.','The goal is zero hip rotation — imagine a glass of water on your lower back.','Tap slowly and deliberately. 2 sets of 10 taps.']},
+{id:'deadbug',name:'Dead Bugs',em:'🪲',cat:'CORE',type:'reps',target:12,rest:45,tempo:'3s extension',custom:'deadbug',minRepSec:2.5,
+ tips:['Press your lower back into the floor before every extension — that’s the whole exercise.','Extend opposite arm and leg slowly over 3 seconds; exhale as you reach.','If your back arches off the floor, shorten the range until you’re stronger.']},
+{id:'plank',name:'Plank',em:'🧘',cat:'CORE',type:'hold',target:45,rest:45,tempo:'Hold steady',
+ form:[{fn:lm=>{const b=avg(bodyLn(lm));return b!==null&&b<152;},msg:'Hips too low/high — make one straight line'}],
+ tips:['Squeeze glutes and brace abs like you’re about to take a punch.','Elbows under shoulders, gaze at the floor — neck neutral.','Shaking is fine. Sagging is not. Stop when your line breaks, not the clock.']},
+];
+const SCHEDULE=[
+ {d:'Mon',t:'Workout',w:1},{d:'Tue',t:'Workout',w:1},{d:'Wed',t:'Active Recovery — walk 20 min',w:0},
+ {d:'Thu',t:'Workout',w:1},{d:'Fri',t:'Workout',w:1},{d:'Sat',t:'Light jump rope or walk',w:0},{d:'Sun',t:'Full rest',w:0}
+];
+/* ==================== STATE / STORAGE ==================== */
+const $=id=>document.getElementById(id);
+const store={
+  get hist(){try{return JSON.parse(localStorage.getItem('et_hist')||'[]')}catch(e){return[]}},
+  set hist(v){localStorage.setItem('et_hist',JSON.stringify(v))},
+  getTarget(id){const t=JSON.parse(localStorage.getItem('et_targets')||'{}');return t[id];},
+  setTarget(id,v){const t=JSON.parse(localStorage.getItem('et_targets')||'{}');t[id]=v;localStorage.setItem('et_targets',JSON.stringify(t));}
+};
+let online=navigator.onLine, cur=null, running=false, facing='user', stream=null, landmarker=null, raf=0;
+let session=null; // {ex, reps, holdMs, sets:[], setNo, resting, timedLeft, jumps}
+/* ==================== AUDIO ==================== */
+let actx=null;
+function beep(f=880,dur=.09,when=0){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=f;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.15,actx.currentTime+when);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+when+dur);
+    o.start(actx.currentTime+when);o.stop(actx.currentTime+when+dur+.02);
+  }catch(e){}
+}
+const repBeep=()=>beep(880,.09);
+const doneBeep=()=>{beep(660,.12);beep(880,.12,.15);beep(1100,.2,.3);};
+/* ==================== ONLINE TOGGLE ==================== */
+function setOnline(v){
+  online=v;
+  $('netToggle').classList.toggle('on',v);
+  $('netLbl').textContent=v?'Online':'Offline';
+  refreshTips();
+}
+$('netToggle').onclick=()=>setOnline(!online);
+window.addEventListener('online',()=>setOnline(true));
+window.addEventListener('offline',()=>setOnline(false));
+let tipTimer=0,tipIdx=0;
+function refreshTips(){
+  clearInterval(tipTimer);
+  const show=online&&cur&&document.getElementById('scr-workout').classList.contains('act');
+  $('tipBox').classList.toggle('show',!!show);
+  $('offNote').classList.toggle('show',!show&&!!cur);
+  if(show){
+    const rot=()=>{$('tipTxt').textContent=cur.tips[tipIdx%cur.tips.length];tipIdx++;};
+    rot();tipTimer=setInterval(rot,10000);
+  }
+}
+/* ==================== NAV / HOME ==================== */
+function goto(scr){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
+  $('scr-'+scr).classList.add('act');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('act',b.dataset.scr===scr));
+  if(scr==='history')renderHistory();
+  if(scr!=='workout'){stopCamera();refreshTips();}
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>goto(b.dataset.scr));
+function renderHome(){
+  const dow=(new Date().getDay()+6)%7; // Mon=0
+  const t=SCHEDULE[dow];
+  $('todayLine').innerHTML=`Today (${t.d}): <b>${t.t}</b>`;
+  $('weekRow').innerHTML=SCHEDULE.map((s,i)=>`<div class="day ${s.w?'workout':''} ${i===dow?'today':''}">${s.d}</div>`).join('');
+  const cats=['ALL',...new Set(EXERCISES.map(e=>e.cat))];
+  let curCat='ALL';
+  const drawChips=()=>{$('chips').innerHTML=cats.map(c=>`<button class="chip ${c===curCat?'act':''}" data-c="${c}">${c}</button>`).join('');
+    document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{curCat=ch.dataset.c;drawChips();drawGrid();});};
+  const drawGrid=()=>{
+    $('exGrid').innerHTML=EXERCISES.filter(e=>curCat==='ALL'||e.cat===curCat).map(e=>{
+      const tg=store.getTarget(e.id)??e.target;
+      const meta=e.type==='reps'?`${tg} reps${e.perArm?' (both arms)':''}`:e.type==='hold'?`Hold ${tg}s`:`${Math.round(tg/60)} min`;
+      return `<div class="ex" data-id="${e.id}"><span class="em">${e.em}</span><h3>${e.name}</h3><span class="cat ${e.cat}">${e.cat}</span><div class="meta">${meta}<br>${e.tempo} · Rest ${e.rest}s</div></div>`;
+    }).join('');
+    document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>openWorkout(el.dataset.id));
+  };
+  drawChips();drawGrid();
+}
+/* ==================== WORKOUT ==================== */
+function openWorkout(id){
+  cur=EXERCISES.find(e=>e.id===id);
+  session={ex:cur,reps:0,holdMs:0,sets:[],setNo:1,resting:false,timedLeft:(store.getTarget(id)??cur.target),jumps:0,
+           tracker:makeTracker(cur),lastForm:0,startTs:Date.now()};
+  tipIdx=0;
+  $('wTitle').textContent=cur.name;
+  $('wTempo').textContent=cur.tempo;
+  $('countUnit').textContent=cur.type==='reps'?' reps':' s';
+  $('setInfo').textContent='Set 1';
+  $('count').childNodes[0].nodeValue='0';
+  $('stateLbl').textContent='Tap Start Camera';
+  $('loader').style.display='flex';$('loadTxt').textContent='Tap Start Camera to begin';
+  $('restOv').classList.remove('show');
+  goto('workout');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('act'));
+  refreshTips();
+}
+$('backBtn').onclick=()=>goto('home');
+$('editTarget').onclick=()=>{
+  if(!cur)return;
+  const tg=store.getTarget(cur.id)??cur.target;
+  const unit=cur.type==='reps'?'reps':'seconds';
+  const v=parseInt(prompt(`Target ${unit} for ${cur.name}:`,tg));
+  if(v>0){store.setTarget(cur.id,v);if(cur.type!=='reps')session.timedLeft=v;renderHome();updateHud();}
+};
+/* ---- trackers ---- */
+function makeTracker(ex){
+  if(ex.type==='hold')return holdTracker(ex);
+  if(ex.type==='timed')return timedTracker(ex);
+  if(ex.custom==='taps')return tapsTracker(ex);
+  if(ex.custom==='deadbug')return deadbugTracker(ex);
+  return angleTracker(ex);
+}
+function angleTracker(ex){
+  let sm=null,down=false,downT=0,lastUpT=0;
+  return{
+    update(lm,t){
+      let v=ex.det.get(lm);
+      if(v==null){ $('stateLbl').textContent='Move fully into frame'; return; }
+      sm=sm==null?v:sm*0.4+v*0.6;
+      if(!down&&ex.det.isDown(sm)){down=true;downT=t;$('stateLbl').textContent='Now return…';}
+      else if(down&&ex.det.isUp(sm)){
+        down=false;
+        const repDur=(t-(lastUpT||downT))/1000;lastUpT=t;
+        session.reps++;repBeep();
+        if(ex.minRepSec&&repDur<ex.minRepSec*0.6)flashForm(`Slow down — tempo ${ex.tempo}`);
+        else flashForm('Good rep!','ok');
+        $('stateLbl').textContent='Rep counted';
+        checkSetDone();
+      } else {
+        $('stateLbl').textContent=down?'Hold / return with control':'Tracking… start your rep';
+      }
+    }
+  };
+}
+function tapsTracker(ex){
+  let near={l:false,r:false};
+  return{
+    update(lm){
+      const lw=lm[L.LW],rw=lm[L.RW],ls=lm[L.LS],rs=lm[L.RS];
+      if(!vis(ls)||!vis(rs)){$('stateLbl').textContent='Move fully into frame';return;}
+      const sw=Math.hypot(ls.x-rs.x,ls.y-rs.y)||0.1;
+      const pairs=[['l',lw,rs],['r',rw,ls]]; // wrist -> opposite shoulder
+      for(const [k,w,s] of pairs){
+        if(!vis(w)||!vis(s))continue;
+        const d=Math.hypot(w.x-s.x,w.y-s.y)/sw;
+        if(!near[k]&&d<0.45){near[k]=true;session.reps++;repBeep();$('stateLbl').textContent='Tap!';checkSetDone();}
+        else if(near[k]&&d>0.85)near[k]=false;
+      }
+      if(!near.l&&!near.r)$('stateLbl').textContent='Tracking taps…';
+    }
+  };
+}
+function deadbugTracker(ex){
+  let ext=false,extT=0;
+  return{
+    update(lm,t){
+      const ks=knees(lm);
+      if(!ks.length){$('stateLbl').textContent='Lie down, legs in frame';return;}
+      const mx=Math.max(...ks);
+      if(!ext&&mx>150){ext=true;extT=t;$('stateLbl').textContent='Extended — hold 3s tempo';}
+      else if(ext&&mx<110){
+        ext=false;session.reps++;repBeep();
+        if((t-extT)/1000<1.5)flashForm('Slower — 3s extension');else flashForm('Good rep!','ok');
+        checkSetDone();
+      } else if(!ext)$('stateLbl').textContent='Extend opposite arm & leg';
+    }
+  };
+}
+function holdTracker(ex){
+  let last=0;
+  return{
+    update(lm,t){
+      const b=avg(bodyLn(lm));
+      const s=mid(lm,L.LS,L.RS),a=mid(lm,L.LA,L.RA);
+      const horizontal=s&&a&&Math.abs(s.y-a.y)<0.3;
+      const holding=b!==null&&b>152&&horizontal;
+      if(holding){
+        if(last)session.holdMs+=t-last;
+        $('stateLbl').textContent='Holding — stay tight!';
+        const secs=session.holdMs/1000,tg=store.getTarget(ex.id)??ex.target;
+        if(secs>=tg&&!session.resting){checkSetDone(true);}
+      } else $('stateLbl').textContent=b===null?'Get into plank, side to camera':'Get into position…';
+      last=t;
+      updateHud();
+    }
+  };
+}
+function timedTracker(ex){
+  let last=0,base=null,air=false;
+  return{
+    update(lm,t){
+      if(last&&!session.resting){
+        session.timedLeft-=(t-last)/1000;
+        if(session.timedLeft<=0){session.timedLeft=0;checkSetDone(true);}
+      }
+      last=t;
+      // jump counting via hip bounce
+      const h=mid(lm,L.LH,L.RH);
+      if(h){
+        base=base==null?h.y:base*0.985+h.y*0.015;
+        if(!air&&h.y<base-0.018){air=true;}
+        else if(air&&h.y>base-0.004){air=false;session.jumps++;}
+      }
+      $('stateLbl').textContent=`Jumps: ${session.jumps}`;
+      updateHud();
+    }
+  };
+}
+/* ---- set / rest flow ---- */
+function checkSetDone(force){
+  const tg=store.getTarget(cur.id)??cur.target;
+  const done=force||(cur.type==='reps'&&session.reps>=tg);
+  updateHud();
+  if(!done||session.resting)return;
+  session.resting=true;doneBeep();
+  const setVal=cur.type==='reps'?session.reps:cur.type==='hold'?Math.round(session.holdMs/1000):Math.round((store.getTarget(cur.id)??cur.target)-session.timedLeft);
+  session.sets.push(cur.type==='timed'?{secs:setVal,jumps:session.jumps}:cur.type==='hold'?{secs:setVal}:{reps:setVal});
+  let left=cur.rest;
+  $('restT').textContent=left;$('restOv').classList.add('show');
+  const iv=setInterval(()=>{
+    left--; $('restT').textContent=left;
+    if(left<=0)endRest();
+  },1000);
+  $('skipRest').onclick=endRest;
+  function endRest(){
+    clearInterval(iv);$('restOv').classList.remove('show');
+    session.setNo++;session.reps=0;session.holdMs=0;session.jumps=0;
+    session.timedLeft=store.getTarget(cur.id)??cur.target;
+    session.resting=false;session.tracker=makeTracker(cur);
+    $('setInfo').textContent='Set '+session.setNo;
+    updateHud();
+  }
+}
+function updateHud(){
+  if(!session)return;
+  const tg=store.getTarget(cur.id)??cur.target;
+  let main;
+  if(cur.type==='reps')main=session.reps;
+  else if(cur.type==='hold')main=Math.floor(session.holdMs/1000);
+  else main=Math.ceil(session.timedLeft);
+  $('count').childNodes[0].nodeValue=main;
+  $('countUnit').textContent=(cur.type==='reps'?' / '+tg+' reps':cur.type==='hold'?' / '+tg+'s':'s left');
+}
+let formTo=0;
+function flashForm(msg,ok){
+  const el=$('formMsg');
+  el.textContent=msg;el.classList.toggle('ok',ok==='ok');el.classList.add('show');
+  clearTimeout(formTo);formTo=setTimeout(()=>el.classList.remove('show'),ok==='ok'?900:2000);
+}
+function finishSession(){
+  if(!session)return;
+  // capture in-progress set
+  const partial=cur.type==='reps'?session.reps:cur.type==='hold'?Math.round(session.holdMs/1000):Math.round((store.getTarget(cur.id)??cur.target)-session.timedLeft);
+  if(partial>0&&!session.resting)session.sets.push(cur.type==='reps'?{reps:partial}:cur.type==='timed'?{secs:partial,jumps:session.jumps}:{secs:partial});
+  if(session.sets.length){
+    const h=store.hist;
+    h.unshift({ts:Date.now(),id:cur.id,name:cur.name,em:cur.em,type:cur.type,sets:session.sets});
+    store.hist=h;
+  }
+  session=null;cur=null;
+  goto('home');
+}
+$('finishBtn').onclick=finishSession;
+/* ==================== CAMERA + POSE ==================== */
+async function initLandmarker(){
+  if(landmarker)return landmarker;
+  $('loadTxt').textContent='Loading pose model…';
+  const mod=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+  const files=await mod.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  landmarker=await mod.PoseLandmarker.createFromOptions(files,{
+    baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:'GPU'},
+    runningMode:'VIDEO',numPoses:1
+  });
+  return landmarker;
+}
+async function startCamera(){
+  try{
+    $('loadTxt').textContent='Starting camera…';
+    stopStream();
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280},height:{ideal:720}},audio:false});
+    const v=$('vid');v.srcObject=stream;await v.play();
+    const mir=facing==='user';
+    v.classList.toggle('mir',mir);$('cv').classList.toggle('mir',mir);
+    await initLandmarker();
+    $('loader').style.display='none';
+    running=true;$('startBtn').textContent='Pause';
+    loop();
+  }catch(err){
+    $('loadTxt').textContent='Camera/model error: '+err.message+(location.protocol==='http:'&&!['localhost','127.0.0.1'].includes(location.hostname)?' — camera needs HTTPS or localhost':'');
+  }
+}
+function stopStream(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
+function stopCamera(){
+  running=false;cancelAnimationFrame(raf);stopStream();
+  $('startBtn').textContent='Start Camera';
+}
+$('startBtn').onclick=()=>{
+  if(actx&&actx.state==='suspended')actx.resume();
+  if(running){running=false;cancelAnimationFrame(raf);$('startBtn').textContent='Resume';}
+  else startCamera();
+};
+$('flipBtn').onclick=()=>{facing=facing==='user'?'environment':'user';if(running||stream)startCamera();};
+let lastVts=-1;
+function loop(){
+  if(!running)return;
+  raf=requestAnimationFrame(loop);
+  const v=$('vid');
+  if(v.readyState<2||v.currentTime===lastVts)return;
+  lastVts=v.currentTime;
+  const t=performance.now();
+  let res;
+  try{res=landmarker.detectForVideo(v,t);}catch(e){return;}
+  const lm=res&&res.landmarks&&res.landmarks[0];
+  drawPose(lm);
+  if(!lm||session===null||session.resting)return;
+  session.tracker.update(lm,t);
+  // form checks (throttled)
+  if(cur.form&&t-session.lastForm>1500){
+    for(const f of cur.form){
+      try{if(f.fn(lm)){flashForm(f.msg);session.lastForm=t;break;}}catch(e){}
+    }
+  }
+  updateHud();
+}
+const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+function drawPose(lm){
+  const cvs=$('cv'),v=$('vid');
+  if(cvs.width!==v.videoWidth){cvs.width=v.videoWidth||640;cvs.height=v.videoHeight||480;}
+  const c=cvs.getContext('2d');
+  c.clearRect(0,0,cvs.width,cvs.height);
+  if(!lm)return;
+  c.strokeStyle='rgba(63,174,106,.9)';c.lineWidth=Math.max(3,cvs.width/240);c.lineCap='round';
+  for(const [a,b] of BONES){
+    if(!vis(lm[a])||!vis(lm[b]))continue;
+    c.beginPath();c.moveTo(lm[a].x*cvs.width,lm[a].y*cvs.height);c.lineTo(lm[b].x*cvs.width,lm[b].y*cvs.height);c.stroke();
+  }
+  c.fillStyle='#fff';
+  for(const i of Object.values(L)){
+    const p=lm[i];if(!vis(p))continue;
+    c.beginPath();c.arc(p.x*cvs.width,p.y*cvs.height,Math.max(3,cvs.width/220),0,7);c.fill();
+  }
+}
+/* ==================== HISTORY ==================== */
+function renderHistory(){
+  const h=store.hist;
+  if(!h.length){$('histList').innerHTML='<div class="empty">No workouts yet.<br>Finish an exercise and it will show up here. 💪</div>';return;}
+  const byDay={};
+  for(const it of h){
+    const d=new Date(it.ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+    (byDay[d]=byDay[d]||[]).push(it);
+  }
+  $('histList').innerHTML=Object.entries(byDay).map(([d,items])=>`<div class="hday"><h4>${d}</h4>${items.map(it=>{
+    const val=it.type==='reps'
+      ?it.sets.map(s=>s.reps).join(' · ')+' reps'
+      :it.sets.map(s=>s.secs+'s'+(s.jumps?` (${s.jumps} jumps)`:'')).join(' · ');
+    const time=new Date(it.ts).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    return `<div class="hitem"><div>${it.em} ${it.name}<div class="sub">${it.sets.length} set${it.sets.length>1?'s':''} · ${time}</div></div><div class="val">${val}</div></div>`;
+  }).join('')}</div>`).join('');
+}
+/* ==================== BOOT ==================== */
+renderHome();
+setOnline(navigator.onLine);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
+  
