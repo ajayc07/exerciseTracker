@@ -9,6 +9,17 @@ A static, single-page PWA (no build step, no dependencies) that tracks exercise 
 - `manifest.webmanifest`, `icon-192.png`, `icon-512.png` — PWA install metadata.
 - `README.md` — user-facing usage notes.
 
+## Key behaviors (v2)
+- **Get-ready countdown**: after Start/Resume/Reset/rest, a configurable countdown (default 5s start / 3s resume) runs before any counting begins — prevents false reps while getting into position.
+- **Settings panel (⚙ in header)**: per-exercise target + rest seconds, countdown durations, voice announcements, voice commands, gesture control, camera resolution. Stored in localStorage keys `et_set`, `et_targets`, `et_rests`.
+- **Reset Set (↺)**: zeroes the current set counters and re-runs the countdown.
+- **Distance control** (user exercises away from device):
+  - Hand gestures (pose-based, works offline): one hand held above head 2s = pause/resume; both hands 3s = reset set. 4s cooldown after each trigger. Progress bar shown at bottom of camera stage.
+  - Voice commands (optional, Web Speech API, needs online + mic): "pause/stop", "go/start/resume", "reset", "finish/done".
+  - Voice announcements (speechSynthesis, offline-capable): counts each rep aloud, "Go", "Set complete. Rest."
+- **Performance**: adaptive frame skipping when pose detection is slow (>45ms skip 1, >80ms skip 2), FPS badge on stage, default 480p capture (720p optional in settings). Timed/hold timers ignore gaps >500ms so walking out of frame or pausing doesn't eat time.
+- **History backup**: Export/Import JSON buttons in History tab (merge + dedupe on import).
+
 ## Important constraints
 - `getUserMedia` (camera) requires HTTPS or localhost — the app cannot run from `file://`.
 - No bundler/framework. Keep it dependency-free and single-file. Do not add npm/node tooling.
