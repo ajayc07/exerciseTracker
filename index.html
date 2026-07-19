@@ -83,6 +83,11 @@ nav button.act{color:var(--ink)}
 .btn.pri{background:var(--green);color:#08130c}
 .btn.warn{background:var(--red);color:#fff}
 .btn.sm{flex:none;padding:13px 14px}
+.wname .btn.sm{padding:7px 10px;font-size:14px}
+#dryToggle.on{background:var(--amber);color:#1a1300}
+#muteBtn.on{background:var(--red);color:#fff}
+#dryBadge{position:absolute;top:70px;left:12px;background:rgba(224,161,58,.92);color:#1a1300;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.5px;display:none;z-index:3}
+#dryBadge.show{display:block}
 #tipBox{margin-top:12px;background:linear-gradient(135deg,#1d2b22,#182019);border:1px solid #2c4434;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;display:none}
 #tipBox.show{display:block}
 #tipBox .h{font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--green);margin-bottom:5px}
@@ -135,12 +140,13 @@ nav button.act{color:var(--ink)}
       <div class="grid" id="exGrid"></div>
     </section>
     <section class="screen" id="scr-workout">
-      <div class="wname"><h2 id="wTitle"></h2><span class="tempo" id="wTempo"></span><button class="btn sm" id="editTarget" title="Edit target">✎</button></div>
+      <div class="wname"><h2 id="wTitle"></h2><span class="tempo" id="wTempo"></span><button class="btn sm" id="dryToggle" title="Practice mode — don't save to history">🧪</button><button class="btn sm" id="muteBtn" title="Mute voice">🔊</button><button class="btn sm" id="editTarget" title="Edit target">✎</button></div>
       <div id="stage">
         <video id="vid" playsinline muted></video>
         <canvas id="cv"></canvas>
         <div id="hud">
           <div id="hudTop"><div id="count">0<small id="countUnit"></small></div><div id="setInfo">Set 1</div></div>
+          <div id="dryBadge">PRACTICE — not saved</div>
           <div id="formMsg"></div>
           <div id="stateLbl">Position yourself in frame</div>
         </div>
@@ -292,15 +298,15 @@ const store={
   setTarget(id,v){const t=JSON.parse(localStorage.getItem('et_targets')||'{}');t[id]=v;localStorage.setItem('et_targets',JSON.stringify(t));}
 };
 // global settings (admin panel)
-const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,res:480};
+const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,res:480,muted:false};
 const SET=Object.assign({},DEFS,JSON.parse(localStorage.getItem('et_set')||'{}'));
 function saveSET(){localStorage.setItem('et_set',JSON.stringify(SET));}
 store.getRest=id=>JSON.parse(localStorage.getItem('et_rests')||'{}')[id];
 store.setRest=(id,v)=>{const t=JSON.parse(localStorage.getItem('et_rests')||'{}');t[id]=v;localStorage.setItem('et_rests',JSON.stringify(t));};
-let online=navigator.onLine, cur=null, running=false, armed=false, facing='user', stream=null, landmarker=null, raf=0;
+let online=navigator.onLine, cur=null, running=false, armed=false, facing='user', stream=null, landmarker=null, raf=0, dryMode=false;
 let session=null; // {ex, reps, holdMs, sets:[], setNo, resting, timedLeft, jumps}
 function speak(txt){
-  if(!SET.announce)return;
+  if(!SET.announce||SET.muted)return;
   try{const u=new SpeechSynthesisUtterance(String(txt));u.rate=1.15;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}
 }
 function countRep(){session.reps++;repBeep();speak(session.reps);}
@@ -368,9 +374,24 @@ function renderHome(){
   drawChips();drawGrid();
 }
 /* ==================== WORKOUT ==================== */
+function updateDryUI(){
+  $('dryToggle').classList.toggle('on',dryMode);
+  $('dryBadge').classList.toggle('show',dryMode);
+}
+function updateMuteUI(){
+  $('muteBtn').classList.toggle('on',SET.muted);
+  $('muteBtn').textContent=SET.muted?'🔇':'🔊';
+}
+$('dryToggle').onclick=()=>{dryMode=!dryMode;updateDryUI();};
+$('muteBtn').onclick=()=>{
+  SET.muted=!SET.muted;saveSET();updateMuteUI();
+  if(running)initVoice();
+};
+updateMuteUI();
 function openWorkout(id){
   cur=EXERCISES.find(e=>e.id===id);
   armed=false;clearPrep();
+  dryMode=false;updateDryUI();
   session={ex:cur,reps:0,holdMs:0,sets:[],setNo:1,resting:false,timedLeft:(store.getTarget(id)??cur.target),jumps:0,
            tracker:makeTracker(cur),lastForm:0,startTs:Date.now()};
   tipIdx=0;
@@ -430,33 +451,44 @@ function resetSet(){
 }
 $('resetBtn').onclick=resetSet;
 /* ---- remote control: hand gestures ---- */
-let gPause=0,gReset=0,gCool=0;
+let gPause=0,gReset=0,gFinish=0,gCool=0;
 function gestureCheck(lm,t){
   if(t<gCool)return;
   const nose=lm[L.NOSE];
   const bar=$('gestBar');
-  if(!vis(nose)){gPause=0;gReset=0;bar.style.display='none';return;}
+  if(!vis(nose)){gPause=0;gReset=0;gFinish=0;bar.style.display='none';return;}
   const up=w=>vis(w)&&w.y<nose.y-0.03;
   const lUp=up(lm[L.LW]),rUp=up(lm[L.RW]);
   if(lUp&&rUp){ // both hands up 3s -> reset set
-    gPause=0;gReset=gReset||t;
+    gPause=0;gFinish=0;gReset=gReset||t;
     const p=(t-gReset)/3000;
     bar.style.display='block';bar.firstElementChild.style.width=Math.min(100,p*100)+'%';
     $('stateLbl').textContent='Hold both hands up to RESET set…';
     if(p>=1){gReset=0;gCool=t+4000;bar.style.display='none';resetSet();}
   }else if(lUp!==rUp){ // one hand up 2s -> pause/resume
-    gReset=0;gPause=gPause||t;
+    gReset=0;gFinish=0;gPause=gPause||t;
     const p=(t-gPause)/2000;
     bar.style.display='block';bar.firstElementChild.style.width=Math.min(100,p*100)+'%';
     $('stateLbl').textContent=armed?'Hold hand up to PAUSE…':'Hold hand up to RESUME…';
     if(p>=1){gPause=0;gCool=t+4000;bar.style.display='none';armed?pauseTracking():startPrep(SET.restPrep);}
-  }else{gPause=0;gReset=0;bar.style.display='none';}
+  }else{
+    gPause=0;gReset=0;
+    const lw=lm[L.LW],rw=lm[L.RW],ls=lm[L.LS],rs=lm[L.RS];
+    const crossed=vis(lw)&&vis(rw)&&vis(ls)&&vis(rs)&&lw.x>rs.x&&rw.x<ls.x;
+    if(crossed){ // arms crossed over chest 3s -> finish workout
+      gFinish=gFinish||t;
+      const p=(t-gFinish)/3000;
+      bar.style.display='block';bar.firstElementChild.style.width=Math.min(100,p*100)+'%';
+      $('stateLbl').textContent='Hold arms crossed to FINISH…';
+      if(p>=1){gFinish=0;gCool=t+4000;bar.style.display='none';finishSession();}
+    }else{gFinish=0;bar.style.display='none';}
+  }
 }
 /* ---- remote control: voice commands ---- */
 let rec=null;
 function initVoice(){
   if(rec){try{rec.onend=null;rec.stop();}catch(e){}rec=null;}
-  if(!SET.voiceCmd||!online)return;
+  if(!SET.voiceCmd||!online||SET.muted)return;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR)return;
   rec=new SR();rec.continuous=true;rec.interimResults=false;rec.lang='en-US';
@@ -623,12 +655,13 @@ function finishSession(){
   // capture in-progress set
   const partial=cur.type==='reps'?session.reps:cur.type==='hold'?Math.round(session.holdMs/1000):Math.round((store.getTarget(cur.id)??cur.target)-session.timedLeft);
   if(partial>0&&!session.resting)session.sets.push(cur.type==='reps'?{reps:partial}:cur.type==='timed'?{secs:partial,jumps:session.jumps}:{secs:partial});
-  if(session.sets.length){
+  if(session.sets.length&&!dryMode){
     const h=store.hist;
     h.unshift({ts:Date.now(),id:cur.id,name:cur.name,em:cur.em,type:cur.type,sets:session.sets});
     store.hist=h;
   }
   session=null;cur=null;
+  dryMode=false;updateDryUI();
   goto('home');
 }
 $('finishBtn').onclick=finishSession;
