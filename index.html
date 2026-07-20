@@ -108,6 +108,25 @@ body.live #stage{position:absolute;inset:0;width:100%;height:100%;max-height:non
 body.live .wname{position:fixed;top:0;left:0;right:0;z-index:21;margin:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 24px;background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff}
 body.live .btnrow{position:fixed;left:0;right:0;bottom:0;z-index:21;margin:0;padding:16px 14px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,rgba(0,0,0,.75))}
 body.live #tipBox,body.live #offNote{position:fixed;left:10px;right:10px;bottom:78px;z-index:20;margin:0}
+/* readability from a distance while actively working out */
+body.live #formMsg{font-size:22px;padding:12px 22px}
+body.live #stateLbl{font-size:17px;padding:8px 16px}
+body.live #setInfo{font-size:16px}
+body.live #tipBox{font-size:16px;line-height:1.5;padding:16px 18px}
+body.live #tipBox .h{font-size:13px}
+body.live #offNote{font-size:15px}
+/* landscape: move controls + tips to side panels so the camera stays centered and unobstructed */
+@media(orientation:landscape){
+  body.live #stage{left:190px;right:190px}
+  body.live .wname{padding:calc(env(safe-area-inset-top) + 8px) 200px 16px}
+  body.live .btnrow{flex-direction:column;left:auto;right:0;top:0;bottom:0;width:176px;justify-content:center;
+    padding:16px calc(env(safe-area-inset-right) + 14px) 16px 14px;
+    background:linear-gradient(to left,rgba(0,0,0,.75),transparent)}
+  body.live #tipBox,body.live #offNote{left:0;right:auto;top:0;bottom:0;width:176px;
+    padding:16px 14px 16px calc(env(safe-area-inset-left) + 14px);
+    background:linear-gradient(to right,rgba(0,0,0,.75),transparent);border-radius:0;border:none}
+  body.live #tipBox.show,body.live #offNote.show{display:flex;flex-direction:column;justify-content:center}
+}
 /* settings modal */
 #setModal{position:fixed;inset:0;background:rgba(5,6,9,.7);display:none;align-items:flex-end;justify-content:center;z-index:50}
 #setModal.show{display:flex}
