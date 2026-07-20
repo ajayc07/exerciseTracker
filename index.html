@@ -298,7 +298,7 @@ const store={
   setTarget(id,v){const t=JSON.parse(localStorage.getItem('et_targets')||'{}');t[id]=v;localStorage.setItem('et_targets',JSON.stringify(t));}
 };
 // global settings (admin panel)
-const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,res:480,muted:false};
+const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,finishGesture:false,res:480,muted:false};
 const SET=Object.assign({},DEFS,JSON.parse(localStorage.getItem('et_set')||'{}'));
 function saveSET(){localStorage.setItem('et_set',JSON.stringify(SET));}
 store.getRest=id=>JSON.parse(localStorage.getItem('et_rests')||'{}')[id];
@@ -473,6 +473,7 @@ function gestureCheck(lm,t){
     if(p>=1){gPause=0;gCool=t+4000;bar.style.display='none';armed?pauseTracking():startPrep(SET.restPrep);}
   }else{
     gPause=0;gReset=0;
+    if(!SET.finishGesture){gFinish=0;bar.style.display='none';return;}
     const lw=lm[L.LW],rw=lm[L.RW],ls=lm[L.LS],rs=lm[L.RS];
     const shW=vis(ls)&&vis(rs)?Math.abs(ls.x-rs.x):0;
     const crossed=vis(lw)&&vis(rw)&&vis(ls)&&vis(rs)&&shW>0.05&&(rs.x-lw.x)>shW*0.15&&(rw.x-ls.x)>shW*0.15;
@@ -785,6 +786,7 @@ function openSettings(){
    <div class="srow"><label>Voice announcements (rep counts, go, rest)</label><input type="checkbox" id="sAnn" ${SET.announce?'checked':''}></div>
    <div class="srow"><label>Voice commands — say "pause", "go", "reset", "finish" (needs mic + online)</label><input type="checkbox" id="sVc" ${SET.voiceCmd?'checked':''}></div>
    <div class="srow"><label>Hand-gesture control (1 hand up = pause/resume, 2 hands up = reset)</label><input type="checkbox" id="sGest" ${SET.gesture?'checked':''}></div>
+   <div class="srow"><label>Arms-crossed finish gesture (hold 3s to end workout) — experimental, off by default</label><input type="checkbox" id="sFinGest" ${SET.finishGesture?'checked':''}></div>
    <div class="srow"><label>Camera resolution</label><select id="sRes"><option value="480" ${SET.res==480?'selected':''}>480p (fast)</option><option value="720" ${SET.res==720?'selected':''}>720p (sharp)</option></select></div>`;
   $('setEx').innerHTML=EXERCISES.map(e=>{
     const tg=store.getTarget(e.id)??e.target,rs=store.getRest(e.id)??e.rest;
@@ -800,6 +802,7 @@ $('setSave').onclick=()=>{
   SET.announce=$('sAnn').checked;
   SET.voiceCmd=$('sVc').checked;
   SET.gesture=$('sGest').checked;
+  SET.finishGesture=$('sFinGest').checked;
   SET.res=+$('sRes').value||480;
   saveSET();
   document.querySelectorAll('#setEx input[data-t]').forEach(i=>{const v=+i.value;if(v>0)store.setTarget(i.dataset.t,v);});
