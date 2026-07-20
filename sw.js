@@ -1,5 +1,5 @@
 // Exercise Tracker service worker — cache-first so everything (incl. pose model) works offline after first online visit.
-const CACHE = 'extracker-v5';
+const CACHE = 'extracker-v6';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

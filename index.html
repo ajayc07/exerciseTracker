@@ -100,6 +100,14 @@ nav button.act{color:var(--ink)}
 #fpsBadge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#9aa3b2;font-size:10px;padding:3px 7px;border-radius:6px;z-index:3}
 #gestBar{position:absolute;left:10%;right:10%;bottom:52px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);display:none;z-index:3}
 #gestBar span{display:block;height:100%;border-radius:3px;background:var(--amber);width:0%}
+/* full-camera mode while a workout is actively running */
+body.live header,body.live nav{display:none}
+body.live main{padding:0;overflow:hidden}
+body.live #scr-workout{position:fixed;inset:0}
+body.live #stage{position:absolute;inset:0;width:100%;height:100%;max-height:none;aspect-ratio:auto;border-radius:0;margin:0;z-index:1}
+body.live .wname{position:fixed;top:0;left:0;right:0;z-index:21;margin:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 24px;background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff}
+body.live .btnrow{position:fixed;left:0;right:0;bottom:0;z-index:21;margin:0;padding:16px 14px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,rgba(0,0,0,.75))}
+body.live #tipBox,body.live #offNote{position:fixed;left:10px;right:10px;bottom:78px;z-index:20;margin:0}
 /* settings modal */
 #setModal{position:fixed;inset:0;background:rgba(5,6,9,.7);display:none;align-items:flex-end;justify-content:center;z-index:50}
 #setModal.show{display:flex}
@@ -691,6 +699,7 @@ async function startCamera(){
     await initLandmarker();
     $('loader').style.display='none';
     running=true;$('startBtn').textContent='Pause';
+    document.body.classList.add('live');
     loop();
     startPrep(SET.prep);
     initVoice();
@@ -701,6 +710,7 @@ async function startCamera(){
 function stopStream(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
 function stopCamera(){
   running=false;armed=false;clearPrep();cancelAnimationFrame(raf);stopStream();
+  document.body.classList.remove('live');
   if(rec){try{rec.onend=null;rec.stop();}catch(e){}rec=null;}
   $('startBtn').textContent='Start Camera';
 }
