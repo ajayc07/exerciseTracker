@@ -98,8 +98,8 @@ nav button.act{color:var(--ink)}
 #prepOv .t{font-size:84px;font-weight:900;color:var(--green)}
 #prepOv .l{color:var(--mut);letter-spacing:2px;font-size:13px;font-weight:700}
 #fpsBadge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#9aa3b2;font-size:10px;padding:3px 7px;border-radius:6px;z-index:3}
-#gestBar{position:absolute;left:10%;right:10%;bottom:52px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);display:none;z-index:3}
-#gestBar span{display:block;height:100%;border-radius:3px;background:var(--amber);width:0%}
+#gestBar{position:absolute;left:8%;right:8%;bottom:56px;height:20px;border-radius:10px;background:rgba(255,255,255,.18);display:none;z-index:3}
+#gestBar span{display:block;height:100%;border-radius:10px;background:var(--amber);width:0%}
 /* full-camera mode while a workout is actively running */
 body.live header,body.live nav{display:none}
 body.live main{padding:0;overflow:hidden}
@@ -108,23 +108,25 @@ body.live #stage{position:absolute;inset:0;width:100%;height:100%;max-height:non
 body.live .wname{position:fixed;top:0;left:0;right:0;z-index:21;margin:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 24px;background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff}
 body.live .btnrow{position:fixed;left:0;right:0;bottom:0;z-index:21;margin:0;padding:16px 14px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,rgba(0,0,0,.75))}
 body.live #tipBox,body.live #offNote{position:fixed;left:10px;right:10px;bottom:78px;z-index:20;margin:0}
-/* readability from a distance while actively working out */
-body.live #formMsg{font-size:22px;padding:12px 22px}
-body.live #stateLbl{font-size:17px;padding:8px 16px}
-body.live #setInfo{font-size:16px}
-body.live #tipBox{font-size:16px;line-height:1.5;padding:16px 18px}
-body.live #tipBox .h{font-size:13px}
-body.live #offNote{font-size:15px}
+/* readability from a distance (7-8ft) while actively working out */
+body.live #formMsg{font-size:24px;padding:12px 22px}
+body.live #stateLbl{font-size:19px;padding:8px 16px}
+body.live #setInfo{font-size:17px}
+body.live #tipBox{font-size:22px;font-weight:600;line-height:1.45;padding:18px 20px}
+body.live #tipBox .h{font-size:15px}
+body.live #offNote{font-size:20px;font-weight:600}
 /* landscape: move controls + tips to side panels so the camera stays centered and unobstructed */
 @media(orientation:landscape){
-  body.live #stage{left:190px;right:190px}
-  body.live .wname{padding:calc(env(safe-area-inset-top) + 8px) 200px 16px}
-  body.live .btnrow{flex-direction:column;left:auto;right:0;top:0;bottom:0;width:176px;justify-content:center;
-    padding:16px calc(env(safe-area-inset-right) + 14px) 16px 14px;
-    background:linear-gradient(to left,rgba(0,0,0,.75),transparent)}
-  body.live #tipBox,body.live #offNote{left:0;right:auto;top:0;bottom:0;width:176px;
+  body.live #stage{left:230px;right:120px}
+  body.live .wname{padding:calc(env(safe-area-inset-top) + 8px) 130px 16px 240px}
+  body.live .btnrow{flex-direction:column;left:auto;right:0;top:0;bottom:0;width:120px;
+    justify-content:center;align-items:stretch;gap:14px;
+    padding:16px calc(env(safe-area-inset-right) + 10px) 16px 10px;
+    background:transparent}
+  body.live .btnrow .btn{flex:none;padding:9px 8px;font-size:13px}
+  body.live #tipBox,body.live #offNote{left:0;right:auto;top:0;bottom:0;width:230px;
     padding:16px 14px 16px calc(env(safe-area-inset-left) + 14px);
-    background:linear-gradient(to right,rgba(0,0,0,.75),transparent);border-radius:0;border:none}
+    background:linear-gradient(to right,rgba(0,0,0,.8),rgba(0,0,0,.35));border-radius:0;border:none}
   body.live #tipBox.show,body.live #offNote.show{display:flex;flex-direction:column;justify-content:center}
 }
 /* settings modal */
