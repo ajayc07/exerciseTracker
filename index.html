@@ -505,7 +505,8 @@ function gestureCheck(lm,t){
     if(!SET.finishGesture){gFinish=0;bar.style.display='none';return;}
     const lw=lm[L.LW],rw=lm[L.RW],ls=lm[L.LS],rs=lm[L.RS];
     const shW=vis(ls)&&vis(rs)?Math.abs(ls.x-rs.x):0;
-    const crossed=vis(lw)&&vis(rw)&&vis(ls)&&vis(rs)&&shW>0.05&&(rs.x-lw.x)>shW*0.15&&(rw.x-ls.x)>shW*0.15;
+    const mid=(ls.x+rs.x)/2;
+    const crossed=vis(lw)&&vis(rw)&&vis(ls)&&vis(rs)&&shW>0.05&&(mid-lw.x)>shW*0.12&&(rw.x-mid)>shW*0.12;
     if(crossed){ // arms crossed over chest 3s -> finish workout
       gFinish=gFinish||t;
       const p=(t-gFinish)/3000;
