@@ -26,6 +26,8 @@ header h1 small{display:block;font-size:10px;color:var(--mut);font-weight:500;le
 .toggle.on .tswitch::after{left:25px}
 .toggle .lbl{min-width:44px;text-align:right}
 .toggle.on .lbl{color:var(--green);font-weight:700}
+#tipsToggle{transition:color .15s}
+#tipsToggle.on{color:var(--green)}
 main{flex:1;overflow-y:auto;padding:14px 14px 90px;-webkit-overflow-scrolling:touch}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#171a20;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:none;border:none;color:var(--mut);padding:10px 0 12px;font-size:11px;cursor:pointer}
@@ -86,6 +88,7 @@ nav button.act{color:var(--ink)}
 .wname .btn.sm{padding:7px 10px;font-size:14px}
 #dryToggle.on{background:var(--amber);color:#1a1300}
 #muteBtn.on{background:var(--red);color:#fff}
+#fsBtn.on{background:var(--blue);color:#fff}
 #dryBadge{position:absolute;top:70px;left:12px;background:rgba(224,161,58,.92);color:#1a1300;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.5px;display:none;z-index:3}
 #dryBadge.show{display:block}
 #tipBox{margin-top:12px;background:linear-gradient(135deg,#1d2b22,#182019);border:1px solid #2c4434;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;display:none}
@@ -100,6 +103,12 @@ nav button.act{color:var(--ink)}
 #fpsBadge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#9aa3b2;font-size:10px;padding:3px 7px;border-radius:6px;z-index:3}
 #gestBar{position:absolute;left:8%;right:8%;bottom:56px;height:20px;border-radius:10px;background:rgba(255,255,255,.18);display:none;z-index:3}
 #gestBar span{display:block;height:100%;border-radius:10px;background:var(--amber);width:0%}
+/* pre-start stage button overlay: left/right columns floating on the camera preview before Start Camera is tapped */
+.btnCol{display:flex;flex-direction:column;gap:10px}
+body.live .btnCol{display:contents}
+body:not(.live) #stage .btnrow{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:16px 12px;margin:0;pointer-events:none;z-index:8}
+body:not(.live) #stage .btnCol{justify-content:space-between;height:78%;pointer-events:none}
+body:not(.live) #stage .btnCol .btn{pointer-events:auto;flex:none}
 /* full-camera mode while a workout is actively running */
 body.live header,body.live nav{display:none}
 body.live main{padding:0;overflow:hidden}
@@ -156,6 +165,7 @@ body.live #offNote{font-size:20px;font-weight:600}
   <header>
     <h1>EXERCISE TRACKER<small>PICK YOURSELF UP. AGAIN.</small></h1>
     <div class="toggle" id="netToggle"><span class="lbl" id="netLbl">Offline</span><div class="tswitch"></div></div>
+    <button id="tipsToggle" title="Toggle workout tips" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px;color:var(--mut)">🌐</button>
     <button id="cfgBtn" title="Settings" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px">⚙️</button>
   </header>
   <main id="main">
@@ -169,7 +179,7 @@ body.live #offNote{font-size:20px;font-weight:600}
       <div class="grid" id="exGrid"></div>
     </section>
     <section class="screen" id="scr-workout">
-      <div class="wname"><h2 id="wTitle"></h2><span class="tempo" id="wTempo"></span><button class="btn sm" id="dryToggle" title="Practice mode — don't save to history">🧪</button><button class="btn sm" id="muteBtn" title="Mute voice">🔊</button><button class="btn sm" id="editTarget" title="Edit target">✎</button></div>
+      <div class="wname"><h2 id="wTitle"></h2><span class="tempo" id="wTempo"></span><button class="btn sm" id="dryToggle" title="Practice mode — don't save to history">🧪</button><button class="btn sm" id="muteBtn" title="Mute voice">🔊</button><button class="btn sm" id="fsBtn" title="Fullscreen">⛶</button><button class="btn sm" id="editTarget" title="Edit target">✎</button></div>
       <div id="stage">
         <video id="vid" playsinline muted></video>
         <canvas id="cv"></canvas>
@@ -183,14 +193,18 @@ body.live #offNote{font-size:20px;font-weight:600}
         <div id="prepOv"><div class="l">GET IN POSITION</div><div class="t" id="prepT">5</div></div>
         <div id="fpsBadge"></div>
         <div id="gestBar"><span></span></div>
+        <div class="btnrow">
+          <div class="btnCol">
+            <button class="btn sm" id="backBtn">←</button>
+            <button class="btn sm" id="resetBtn" title="Reset current set">↺</button>
+          </div>
+          <div class="btnCol">
+            <button class="btn sm" id="flipBtn" title="Switch camera">🔄</button>
+            <button class="btn pri" id="startBtn">Start Camera</button>
+            <button class="btn warn sm" id="finishBtn">Finish</button>
+          </div>
+        </div>
         <div id="loader"><div class="spin"></div><span id="loadTxt">Tap Start Camera to begin</span></div>
-      </div>
-      <div class="btnrow">
-        <button class="btn sm" id="backBtn">←</button>
-        <button class="btn pri" id="startBtn">Start Camera</button>
-        <button class="btn sm" id="flipBtn" title="Switch camera">🔄</button>
-        <button class="btn sm" id="resetBtn" title="Reset current set">↺</button>
-        <button class="btn warn sm" id="finishBtn">Finish</button>
       </div>
       <div id="tipBox"><div class="h">💡 TIP</div><span id="tipTxt"></span></div>
       <div id="offNote">Offline mode — tracking only. Toggle online for tips.</div>
@@ -327,7 +341,7 @@ const store={
   setTarget(id,v){const t=JSON.parse(localStorage.getItem('et_targets')||'{}');t[id]=v;localStorage.setItem('et_targets',JSON.stringify(t));}
 };
 // global settings (admin panel)
-const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,finishGesture:false,res:480,muted:false};
+const DEFS={prep:5,restPrep:3,announce:true,voiceCmd:false,gesture:true,finishGesture:false,res:480,muted:false,tips:true};
 const SET=Object.assign({},DEFS,JSON.parse(localStorage.getItem('et_set')||'{}'));
 function saveSET(){localStorage.setItem('et_set',JSON.stringify(SET));}
 store.getRest=id=>JSON.parse(localStorage.getItem('et_rests')||'{}')[id];
@@ -366,14 +380,21 @@ window.addEventListener('offline',()=>setOnline(false));
 let tipTimer=0,tipIdx=0;
 function refreshTips(){
   clearInterval(tipTimer);
-  const show=online&&cur&&document.getElementById('scr-workout').classList.contains('act');
+  const inWorkout=cur&&document.getElementById('scr-workout').classList.contains('act');
+  const show=SET.tips&&online&&inWorkout;
   $('tipBox').classList.toggle('show',!!show);
-  $('offNote').classList.toggle('show',!show&&!!cur);
+  $('offNote').classList.toggle('show',SET.tips&&!show&&!!cur);
   if(show){
     const rot=()=>{$('tipTxt').textContent=cur.tips[tipIdx%cur.tips.length];tipIdx++;};
     rot();tipTimer=setInterval(rot,10000);
   }
 }
+function updateTipsUI(){
+  $('tipsToggle').classList.toggle('on',SET.tips);
+  $('tipsToggle').title=SET.tips?'Tips: on (tap to turn off)':'Tips: off (tap to turn on)';
+}
+$('tipsToggle').onclick=()=>{SET.tips=!SET.tips;saveSET();updateTipsUI();refreshTips();};
+updateTipsUI();
 /* ==================== NAV / HOME ==================== */
 function goto(scr){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
@@ -417,6 +438,20 @@ $('muteBtn').onclick=()=>{
   if(running)initVoice();
 };
 updateMuteUI();
+function updateFsUI(){
+  const isFs=!!document.fullscreenElement;
+  $('fsBtn').textContent=isFs?'⤢':'⛶';
+  $('fsBtn').classList.toggle('on',isFs);
+  $('fsBtn').title=isFs?'Exit fullscreen':'Fullscreen';
+}
+$('fsBtn').onclick=async()=>{
+  try{
+    if(!document.fullscreenElement)await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(e){}
+};
+document.addEventListener('fullscreenchange',updateFsUI);
+updateFsUI();
 function openWorkout(id){
   cur=EXERCISES.find(e=>e.id===id);
   armed=false;clearPrep();
@@ -543,15 +578,25 @@ function makeTracker(ex){
   return angleTracker(ex);
 }
 function angleTracker(ex){
-  let sm=null,down=false,downT=0,lastUpT=0;
+  let sm=null,down=false,downT=0,lastUpT=0,downFrames=0,upFrames=0;
+  const CONFIRM=3;       // consecutive frames required before flipping down/up state — filters single-frame landmark jitter
+  const MIN_DOWN_MS=250; // must stay "down" this long before an up-swing counts as a rep — rejects noise blips (e.g. BSS's min-of-both-knees flickering between legs)
   return{
     update(lm,t){
       let v=ex.det.get(lm);
-      if(v==null){ $('stateLbl').textContent='Move fully into frame'; return; }
-      sm=sm==null?v:sm*0.4+v*0.6;
-      if(!down&&ex.det.isDown(sm)){down=true;downT=t;$('stateLbl').textContent='Now return…';}
-      else if(down&&ex.det.isUp(sm)){
-        down=false;
+      if(v==null){ downFrames=0;upFrames=0; $('stateLbl').textContent='Move fully into frame'; return; }
+      sm=sm==null?v:sm*0.55+v*0.45;
+      if(!down){
+        upFrames=0;
+        if(ex.det.isDown(sm)){
+          downFrames++;
+          if(downFrames>=CONFIRM){down=true;downT=t;downFrames=0;$('stateLbl').textContent='Now return…';}
+        } else downFrames=0;
+      } else if(ex.det.isUp(sm)){
+        downFrames=0;upFrames++;
+        if(upFrames<CONFIRM)return;
+        upFrames=0;down=false;
+        if(t-downT<MIN_DOWN_MS){ $('stateLbl').textContent='Tracking… start your rep'; return; }
         const repDur=(t-(lastUpT||downT))/1000;lastUpT=t;
         countRep();
         if(ex.minRepSec&&repDur<ex.minRepSec*0.6)flashForm(`Slow down — tempo ${ex.tempo}`);
@@ -559,6 +604,7 @@ function angleTracker(ex){
         $('stateLbl').textContent='Rep counted';
         checkSetDone();
       } else {
+        upFrames=0;
         $('stateLbl').textContent=down?'Hold / return with control':'Tracking… start your rep';
       }
     }
